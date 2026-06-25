@@ -7,17 +7,24 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    body {
-      width: 100vw;
-      height: 100vh;
+    html, body {
+      width: 100%;
+      height: 100%;
       overflow: hidden;
       background: #000;
+    }
+
+    /* dvh = dynamic viewport height — corrige o bug do Safari mobile com a barra de endereço */
+    body {
+      height: 100dvh;
+      min-height: -webkit-fill-available;
     }
 
     #foto {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      object-position: center center;
       display: block;
     }
 
