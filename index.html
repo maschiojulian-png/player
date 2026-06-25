@@ -7,9 +7,7 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    html {
-      height: -webkit-fill-available;
-    }
+    html { height: -webkit-fill-available; }
 
     body {
       width: 100%;
@@ -20,14 +18,14 @@
       position: relative;
     }
 
-    /* Foto ancorada no fundo, deslocada 38px (≈1cm) para baixo */
+    /* Foto enquadrada na área dos olhos */
     #foto {
       position: absolute;
+      inset: 0;
       width: 100%;
-      height: calc(100% + 38px);
+      height: 100%;
       object-fit: cover;
-      object-position: center bottom;
-      bottom: -38px;
+      object-position: center 26%;
       display: block;
     }
 
@@ -41,25 +39,26 @@
 
     .zone { flex: 1; height: 100%; cursor: pointer; }
 
-    /* Feedback visual rápido (ícone no centro de cada zona) */
+    /* Feedback visual rápido */
     .feedback {
       position: fixed;
       top: 50%;
       transform: translateY(-50%);
-      font-size: 2.8rem;
+      font-size: 2.6rem;
       color: white;
-      text-shadow: 0 2px 16px rgba(0,0,0,0.6);
+      font-family: -apple-system, sans-serif;
+      text-shadow: 0 2px 18px rgba(0,0,0,0.7);
       opacity: 0;
-      transition: opacity 0.15s;
+      transition: opacity 0.12s;
       pointer-events: none;
       z-index: 20;
     }
 
-    #fb-prev { left: 16%; }
+    #fb-prev { left: 14%; }
     #fb-play { left: 50%; transform: translate(-50%, -50%); }
-    #fb-next { right: 16%; }
+    #fb-next { right: 14%; }
 
-    /* Tutorial (primeira visita) */
+    /* Tutorial — primeira visita */
     #tutorial {
       position: fixed;
       inset: 0;
@@ -80,7 +79,7 @@
       align-items: center;
       justify-content: center;
       gap: 10px;
-      background: rgba(0, 0, 0, 0.38);
+      background: rgba(0,0,0,0.38);
       backdrop-filter: blur(3px);
     }
 
@@ -89,17 +88,18 @@
     .tuto-icon {
       font-size: 1.8rem;
       color: rgba(255,255,255,0.9);
+      font-family: -apple-system, sans-serif;
     }
 
     .tuto-label {
       font-family: -apple-system, sans-serif;
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       letter-spacing: 0.14em;
       text-transform: uppercase;
       color: rgba(255,255,255,0.65);
     }
 
-    /* Tela de rotação */
+    /* Tela de rotação (só na primeira visita) */
     #girar {
       display: none;
       position: fixed;
@@ -107,7 +107,7 @@
       background: #000;
       z-index: 200;
       color: white;
-      font-family: sans-serif;
+      font-family: -apple-system, sans-serif;
       flex-direction: column;
       align-items: center;
       justify-content: center;
@@ -135,19 +135,16 @@
 
   <img id="foto" src="foto.png" alt="">
 
-  <!-- Zonas de controlo -->
   <div id="zones">
     <div class="zone" id="zone-prev"></div>
     <div class="zone" id="zone-play"></div>
     <div class="zone" id="zone-next"></div>
   </div>
 
-  <!-- Feedback visual -->
   <div class="feedback" id="fb-prev"></div>
   <div class="feedback" id="fb-play"></div>
   <div class="feedback" id="fb-next"></div>
 
-  <!-- Tutorial primeira visita -->
   <div id="tutorial">
     <div class="tuto">
       <div class="tuto-icon">⏮&#xFE0E;</div>
@@ -163,9 +160,8 @@
     </div>
   </div>
 
-  <!-- Overlay rotação celular -->
   <div id="girar">
-    <div class="icone">⟳</div>
+    <div class="icone">↻&#xFE0E;</div>
     <p>Tournez votre téléphone</p>
   </div>
 
@@ -185,22 +181,22 @@
     const girar    = document.getElementById("girar");
     const tutorial = document.getElementById("tutorial");
 
-    let indice          = 0;
-    let tocando         = false;
-    let primeiroClique  = true;
+    let indice        = 0;
+    let tocando       = false;
+    let primeiroClique = true;
+    let ultimoToque   = 0; // debounce: evita duplo disparo touch+click
 
-    // ── Reprodução ──────────────────────────────────────────────────────────
+    // ── Reprodução ─────────────────────────────────────────────────────────
 
-    function carregarE(idx, tocar = true) {
+    function carregarE(idx) {
       indice = ((idx % musicas.length) + musicas.length) % musicas.length;
       audio.src = musicas[indice];
-      audio.currentTime = 0;
-      if (tocar) audio.play().then(() => { tocando = true; }).catch(() => {});
+      audio.play().then(() => { tocando = true; }).catch(() => {});
       syncMediaSession();
     }
 
-    function proximo()   { flash("fb-next", "⏭︎"); carregarE(indice + 1); }
-    function anterior()  {
+    function proximo()  { flash("fb-next", "⏭︎"); carregarE(indice + 1); }
+    function anterior() {
       flash("fb-prev", "⏮︎");
       if (audio.currentTime > 3) { audio.currentTime = 0; }
       else { carregarE(indice - 1); }
@@ -215,71 +211,93 @@
 
     audio.addEventListener("ended", () => carregarE(indice + 1));
 
-    // ── Feedback visual ──────────────────────────────────────────────────────
+    // ── Feedback visual ────────────────────────────────────────────────────
 
-    const fbTimers = {};
+    const timers = {};
     function flash(id, icon) {
       const el = document.getElementById(id);
       el.textContent = icon;
       el.style.opacity = 1;
-      clearTimeout(fbTimers[id]);
-      fbTimers[id] = setTimeout(() => { el.style.opacity = 0; }, 600);
+      clearTimeout(timers[id]);
+      timers[id] = setTimeout(() => { el.style.opacity = 0; }, 650);
     }
 
-    // ── Zonas de clique ──────────────────────────────────────────────────────
+    // ── Controlo das zonas (touch OU click, nunca os dois) ─────────────────
 
-    function handler(action) {
-      return () => {
-        if (primeiroClique) {
-          primeiroClique = false;
-          audio.play().then(() => { tocando = true; }).catch(() => {});
-          fecharTutorial();
-        } else {
-          action();
-        }
-      };
+    function acaoDaZona(action) {
+      const agora = Date.now();
+      if (agora - ultimoToque < 350) return; // debounce
+      ultimoToque = agora;
+
+      if (primeiroClique) {
+        primeiroClique = false;
+        audio.play().then(() => { tocando = true; }).catch(() => {});
+        fecharTutorial();
+        return;
+      }
+      action();
     }
 
-    document.getElementById("zone-prev").addEventListener("click", handler(anterior));
-    document.getElementById("zone-play").addEventListener("click", handler(pausePlay));
-    document.getElementById("zone-next").addEventListener("click", handler(proximo));
-
-    // Touch sem delay (evita duplo disparo com click)
-    ["zone-prev", "zone-play", "zone-next"].forEach((id, i) => {
-      const actions = [anterior, pausePlay, proximo];
-      document.getElementById(id).addEventListener("touchend", (e) => {
+    function bindZona(id, action) {
+      const el = document.getElementById(id);
+      // Touch tem prioridade — preventDefault bloqueia o click subsequente
+      el.addEventListener("touchstart", (e) => {
         e.preventDefault();
-        handler(actions[i])();
-      });
-    });
+        acaoDaZona(action);
+      }, { passive: false });
+      // Click serve para desktop (sem toque)
+      el.addEventListener("click", () => acaoDaZona(action));
+    }
 
-    // ── Tutorial ─────────────────────────────────────────────────────────────
+    bindZona("zone-prev", anterior);
+    bindZona("zone-play", pausePlay);
+    bindZona("zone-next", proximo);
+
+    // ── Tutorial (primeira visita) ─────────────────────────────────────────
 
     function fecharTutorial() {
       tutorial.style.opacity = 0;
       setTimeout(() => { tutorial.style.display = "none"; }, 800);
     }
 
-    if (!localStorage.getItem("tuto_v1")) {
-      localStorage.setItem("tuto_v1", "1");
+    if (!localStorage.getItem("tuto_v2")) {
+      localStorage.setItem("tuto_v2", "1");
       requestAnimationFrame(() => tutorial.classList.add("visivel"));
       setTimeout(fecharTutorial, 4000);
     }
 
-    // ── Autoplay inicial ──────────────────────────────────────────────────────
+    // ── Tela de rotação (só na primeira visita) ────────────────────────────
 
-    carregarE(0, false);
+    const rotacaoVista = localStorage.getItem("rotacao_v1");
+
+    function checarOrientacao() {
+      if (rotacaoVista) { girar.style.display = "none"; return; }
+      const isMobile = navigator.maxTouchPoints > 0 || window.innerWidth <= 1024;
+      const isRetrato = window.innerHeight > window.innerWidth;
+      if (isMobile && isRetrato) {
+        girar.style.display = "flex";
+      } else {
+        girar.style.display = "none";
+        if (isMobile) localStorage.setItem("rotacao_v1", "1");
+      }
+    }
+
+    checarOrientacao();
+    window.addEventListener("resize", checarOrientacao);
+
+    // ── Autoplay inicial ───────────────────────────────────────────────────
+
+    audio.src = musicas[0];
     audio.play()
       .then(() => { tocando = true; primeiroClique = false; fecharTutorial(); })
-      .catch(() => { /* bloqueado — primeiro clique inicia */ });
+      .catch(() => { /* bloqueado — primeiro toque inicia */ });
 
-    // ── Media Session (controles na tela de bloqueio) ────────────────────────
+    // ── Media Session (tela de bloqueio) ──────────────────────────────────
 
     function syncMediaSession() {
       if (!("mediaSession" in navigator)) return;
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: "Piste " + (indice + 1),
-        artist: "",
+        title: "Piste " + (indice + 1)
       });
       navigator.mediaSession.setActionHandler("previoustrack", anterior);
       navigator.mediaSession.setActionHandler("nexttrack",     proximo);
@@ -287,15 +305,7 @@
       navigator.mediaSession.setActionHandler("pause", () => { audio.pause(); tocando = false; });
     }
 
-    // ── Orientação mobile ─────────────────────────────────────────────────────
-
-    function checarOrientacao() {
-      const isMobile = navigator.maxTouchPoints > 0 || window.innerWidth <= 1024;
-      girar.style.display = (isMobile && window.innerHeight > window.innerWidth) ? "flex" : "none";
-    }
-
-    checarOrientacao();
-    window.addEventListener("resize", checarOrientacao);
+    syncMediaSession();
   </script>
 
 </body>
