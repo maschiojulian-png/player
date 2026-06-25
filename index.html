@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -7,41 +7,99 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    html, body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background: #000;
+    html {
+      height: -webkit-fill-available;
     }
 
-    /* dvh = dynamic viewport height — corrige o bug do Safari mobile com a barra de endereço */
     body {
+      width: 100%;
       height: 100dvh;
       min-height: -webkit-fill-available;
+      overflow: hidden;
+      background: #000;
+      position: relative;
     }
 
+    /* Foto ancorada no fundo, deslocada 38px (≈1cm) para baixo */
     #foto {
+      position: absolute;
       width: 100%;
-      height: 100%;
+      height: calc(100% + 38px);
       object-fit: cover;
       object-position: center bottom;
+      bottom: -38px;
       display: block;
     }
 
-    #overlay {
+    /* Três zonas de clique invisíveis */
+    #zones {
       position: fixed;
       inset: 0;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
       z-index: 10;
     }
 
-    /* overlay invisível — clique/toque em qualquer lugar inicia a música */
-    #hint { display: none; }
+    .zone { flex: 1; height: 100%; cursor: pointer; }
 
-    /* Tela de "vire o celular" */
+    /* Feedback visual rápido (ícone no centro de cada zona) */
+    .feedback {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 2.8rem;
+      color: white;
+      text-shadow: 0 2px 16px rgba(0,0,0,0.6);
+      opacity: 0;
+      transition: opacity 0.15s;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    #fb-prev { left: 16%; }
+    #fb-play { left: 50%; transform: translate(-50%, -50%); }
+    #fb-next { right: 16%; }
+
+    /* Tutorial (primeira visita) */
+    #tutorial {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      z-index: 15;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.8s ease;
+    }
+
+    #tutorial.visivel { opacity: 1; }
+
+    .tuto {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: rgba(0, 0, 0, 0.38);
+      backdrop-filter: blur(3px);
+    }
+
+    .tuto + .tuto { border-left: 1px solid rgba(255,255,255,0.12); }
+
+    .tuto-icon {
+      font-size: 1.8rem;
+      color: rgba(255,255,255,0.9);
+    }
+
+    .tuto-label {
+      font-family: -apple-system, sans-serif;
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.65);
+    }
+
+    /* Tela de rotação */
     #girar {
       display: none;
       position: fixed;
@@ -54,7 +112,6 @@
       align-items: center;
       justify-content: center;
       gap: 20px;
-      text-align: center;
     }
 
     #girar .icone {
@@ -63,14 +120,14 @@
     }
 
     @keyframes spin {
-      0%   { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
     }
 
     #girar p {
-      font-size: 1.1rem;
-      letter-spacing: 0.06em;
-      opacity: 0.85;
+      font-size: 1.05rem;
+      letter-spacing: 0.07em;
+      opacity: 0.82;
     }
   </style>
 </head>
@@ -78,66 +135,163 @@
 
   <img id="foto" src="foto.png" alt="">
 
-  <div id="overlay">
-    <div id="hint">▶ toque para começar</div>
+  <!-- Zonas de controlo -->
+  <div id="zones">
+    <div class="zone" id="zone-prev"></div>
+    <div class="zone" id="zone-play"></div>
+    <div class="zone" id="zone-next"></div>
   </div>
 
-  <!-- Overlay de rotação (só aparece no celular em retrato) -->
+  <!-- Feedback visual -->
+  <div class="feedback" id="fb-prev"></div>
+  <div class="feedback" id="fb-play"></div>
+  <div class="feedback" id="fb-next"></div>
+
+  <!-- Tutorial primeira visita -->
+  <div id="tutorial">
+    <div class="tuto">
+      <div class="tuto-icon">⏮</div>
+      <div class="tuto-label">Précédent</div>
+    </div>
+    <div class="tuto">
+      <div class="tuto-icon">⏸</div>
+      <div class="tuto-label">Pause</div>
+    </div>
+    <div class="tuto">
+      <div class="tuto-icon">⏭</div>
+      <div class="tuto-label">Suivant</div>
+    </div>
+  </div>
+
+  <!-- Overlay rotação celular -->
   <div id="girar">
     <div class="icone">⟳</div>
     <p>Tournez votre téléphone</p>
   </div>
 
-  <audio id="audio" loop></audio>
+  <audio id="audio"></audio>
 
   <script>
-    // ─── Adicione aqui os nomes dos arquivos mp3 que colocar na pasta ───
     const musicas = [
-      "musica1.mp3"
+      "musica1.mp3",
+      "musica2.mp3",
+      "musica3.mp3",
+      "musica4.mp3",
+      "musica5.mp3",
+      "musica6.mp3"
     ];
-    // ─────────────────────────────────────────────────────────────────────
 
-    const audio = document.getElementById("audio");
-    const girar = document.getElementById("girar");
+    const audio    = document.getElementById("audio");
+    const girar    = document.getElementById("girar");
+    const tutorial = document.getElementById("tutorial");
 
-    let indiceFinal = -1;
-    let tocando = false;
+    let indice          = 0;
+    let tocando         = false;
+    let primeiroClique  = true;
 
-    function sortearMusica() {
-      if (musicas.length === 1) return 0;
-      let novo;
-      do { novo = Math.floor(Math.random() * musicas.length); }
-      while (novo === indiceFinal);
-      return novo;
-    }
+    // ── Reprodução ──────────────────────────────────────────────────────────
 
-    function tocar(indice) {
-      indiceFinal = indice;
+    function carregarE(idx, tocar = true) {
+      indice = ((idx % musicas.length) + musicas.length) % musicas.length;
       audio.src = musicas[indice];
       audio.currentTime = 0;
-      audio.play().then(() => { tocando = true; }).catch(() => {});
+      if (tocar) audio.play().then(() => { tocando = true; }).catch(() => {});
+      syncMediaSession();
     }
 
-    // Inicia com música aleatória
-    tocar(sortearMusica());
-
-    // Clique/toque: primeira vez inicia, depois troca de música
-    function aoClicar() {
-      if (!tocando) {
-        audio.play().then(() => { tocando = true; }).catch(() => {});
+    function proximo()   { flash("fb-next", "⏭"); carregarE(indice + 1); }
+    function anterior()  {
+      flash("fb-prev", "⏮");
+      if (audio.currentTime > 3) { audio.currentTime = 0; }
+      else { carregarE(indice - 1); }
+    }
+    function pausePlay() {
+      if (tocando) {
+        audio.pause(); tocando = false; flash("fb-play", "⏸");
       } else {
-        tocar(sortearMusica());
+        audio.play().then(() => { tocando = true; }); flash("fb-play", "▶");
       }
     }
 
-    document.addEventListener("click",      aoClicar);
-    document.addEventListener("touchstart", aoClicar);
+    audio.addEventListener("ended", () => carregarE(indice + 1));
 
-    // Detecta celular em retrato
+    // ── Feedback visual ──────────────────────────────────────────────────────
+
+    const fbTimers = {};
+    function flash(id, icon) {
+      const el = document.getElementById(id);
+      el.textContent = icon;
+      el.style.opacity = 1;
+      clearTimeout(fbTimers[id]);
+      fbTimers[id] = setTimeout(() => { el.style.opacity = 0; }, 600);
+    }
+
+    // ── Zonas de clique ──────────────────────────────────────────────────────
+
+    function handler(action) {
+      return () => {
+        if (primeiroClique) {
+          primeiroClique = false;
+          audio.play().then(() => { tocando = true; }).catch(() => {});
+          fecharTutorial();
+        } else {
+          action();
+        }
+      };
+    }
+
+    document.getElementById("zone-prev").addEventListener("click", handler(anterior));
+    document.getElementById("zone-play").addEventListener("click", handler(pausePlay));
+    document.getElementById("zone-next").addEventListener("click", handler(proximo));
+
+    // Touch sem delay (evita duplo disparo com click)
+    ["zone-prev", "zone-play", "zone-next"].forEach((id, i) => {
+      const actions = [anterior, pausePlay, proximo];
+      document.getElementById(id).addEventListener("touchend", (e) => {
+        e.preventDefault();
+        handler(actions[i])();
+      });
+    });
+
+    // ── Tutorial ─────────────────────────────────────────────────────────────
+
+    function fecharTutorial() {
+      tutorial.style.opacity = 0;
+      setTimeout(() => { tutorial.style.display = "none"; }, 800);
+    }
+
+    if (!localStorage.getItem("tuto_v1")) {
+      localStorage.setItem("tuto_v1", "1");
+      requestAnimationFrame(() => tutorial.classList.add("visivel"));
+      setTimeout(fecharTutorial, 4000);
+    }
+
+    // ── Autoplay inicial ──────────────────────────────────────────────────────
+
+    carregarE(0, false);
+    audio.play()
+      .then(() => { tocando = true; primeiroClique = false; fecharTutorial(); })
+      .catch(() => { /* bloqueado — primeiro clique inicia */ });
+
+    // ── Media Session (controles na tela de bloqueio) ────────────────────────
+
+    function syncMediaSession() {
+      if (!("mediaSession" in navigator)) return;
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: "Piste " + (indice + 1),
+        artist: "",
+      });
+      navigator.mediaSession.setActionHandler("previoustrack", anterior);
+      navigator.mediaSession.setActionHandler("nexttrack",     proximo);
+      navigator.mediaSession.setActionHandler("play",  () => { audio.play(); tocando = true; });
+      navigator.mediaSession.setActionHandler("pause", () => { audio.pause(); tocando = false; });
+    }
+
+    // ── Orientação mobile ─────────────────────────────────────────────────────
+
     function checarOrientacao() {
       const isMobile = navigator.maxTouchPoints > 0 || window.innerWidth <= 1024;
-      const isRetrato = window.innerHeight > window.innerWidth;
-      girar.style.display = (isMobile && isRetrato) ? "flex" : "none";
+      girar.style.display = (isMobile && window.innerHeight > window.innerWidth) ? "flex" : "none";
     }
 
     checarOrientacao();
