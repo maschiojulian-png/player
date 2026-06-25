@@ -91,19 +91,49 @@
   <audio id="audio" loop></audio>
 
   <script>
+    // ─── Adicione aqui os nomes dos arquivos mp3 que colocar na pasta ───
     const musicas = [
       "musica1.mp3"
     ];
+    // ─────────────────────────────────────────────────────────────────────
 
-    const audio   = document.getElementById("audio");
-    const overlay = document.getElementById("overlay");
-    const hint    = document.getElementById("hint");
-    const girar   = document.getElementById("girar");
+    const audio = document.getElementById("audio");
+    const girar = document.getElementById("girar");
 
-    const escolhida = musicas[Math.floor(Math.random() * musicas.length)];
-    audio.src = escolhida;
+    let indiceFinal = -1;
+    let tocando = false;
 
-    // Detecta celular em retrato e mostra overlay de rotação
+    function sortearMusica() {
+      if (musicas.length === 1) return 0;
+      let novo;
+      do { novo = Math.floor(Math.random() * musicas.length); }
+      while (novo === indiceFinal);
+      return novo;
+    }
+
+    function tocar(indice) {
+      indiceFinal = indice;
+      audio.src = musicas[indice];
+      audio.currentTime = 0;
+      audio.play().then(() => { tocando = true; }).catch(() => {});
+    }
+
+    // Inicia com música aleatória
+    tocar(sortearMusica());
+
+    // Clique/toque: primeira vez inicia, depois troca de música
+    function aoClicar() {
+      if (!tocando) {
+        audio.play().then(() => { tocando = true; }).catch(() => {});
+      } else {
+        tocar(sortearMusica());
+      }
+    }
+
+    document.addEventListener("click",      aoClicar);
+    document.addEventListener("touchstart", aoClicar);
+
+    // Detecta celular em retrato
     function checarOrientacao() {
       const isMobile = navigator.maxTouchPoints > 0 || window.innerWidth <= 1024;
       const isRetrato = window.innerHeight > window.innerWidth;
@@ -112,24 +142,6 @@
 
     checarOrientacao();
     window.addEventListener("resize", checarOrientacao);
-
-    // Tenta autoplay direto
-    audio.play().catch(() => {});
-
-    // Se bloqueado, qualquer toque/clique na página inicia a música
-    function iniciar() {
-      audio.play();
-      overlay.style.display = "none";
-      document.removeEventListener("click", iniciar);
-      document.removeEventListener("touchstart", iniciar);
-    }
-
-    document.addEventListener("click", iniciar);
-    document.addEventListener("touchstart", iniciar);
-
-    audio.addEventListener("playing", () => {
-      overlay.style.display = "none";
-    });
   </script>
 
 </body>
