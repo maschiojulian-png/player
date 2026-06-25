@@ -18,15 +18,22 @@
       position: relative;
     }
 
-    /* Foto enquadrada na área dos olhos */
+    /* Foto — horizontal: texto aparece em baixo */
     #foto {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center 26%;
+      object-position: center bottom;
       display: block;
+    }
+
+    /* Foto — vertical: olho direito centralizado */
+    @media (orientation: portrait) {
+      #foto {
+        object-position: 85% 25%;
+      }
     }
 
     /* Três zonas de clique invisíveis */
