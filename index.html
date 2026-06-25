@@ -18,21 +18,21 @@
       position: relative;
     }
 
-    /* Foto — horizontal: texto aparece em baixo */
+    /* Foto — horizontal: sobrancelha + texto visíveis */
     #foto {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center bottom;
+      object-position: center 55%;
       display: block;
     }
 
-    /* Foto — vertical: olho direito centralizado */
+    /* Foto — vertical: olho direito */
     @media (orientation: portrait) {
       #foto {
-        object-position: 72% 18%;
+        object-position: 85% 25%;
       }
     }
 
@@ -181,7 +181,10 @@
       "musica3.mp3",
       "musica4.mp3",
       "musica5.mp3",
-      "musica6.mp3"
+      "musica6.mp3",
+      "musica8.mp3",
+      "musica9.mp3",
+      "musica10.mp3"
     ];
 
     const audio    = document.getElementById("audio");
