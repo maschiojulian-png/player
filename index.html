@@ -181,10 +181,9 @@
     const girar    = document.getElementById("girar");
     const tutorial = document.getElementById("tutorial");
 
-    let indice        = 0;
-    let tocando       = false;
+    let indice         = 0;
+    let tocando        = false;
     let primeiroClique = true;
-    let ultimoToque   = 0; // debounce: evita duplo disparo touch+click
 
     // ── Reprodução ─────────────────────────────────────────────────────────
 
@@ -222,12 +221,14 @@
       timers[id] = setTimeout(() => { el.style.opacity = 0; }, 650);
     }
 
-    // ── Controlo das zonas (touch OU click, nunca os dois) ─────────────────
+    // ── Controlo das zonas ─────────────────────────────────────────────────
+
+    let bloqueado = false;
 
     function acaoDaZona(action) {
-      const agora = Date.now();
-      if (agora - ultimoToque < 350) return; // debounce
-      ultimoToque = agora;
+      if (bloqueado) return;
+      bloqueado = true;
+      setTimeout(() => { bloqueado = false; }, 400);
 
       if (primeiroClique) {
         primeiroClique = false;
@@ -238,20 +239,9 @@
       action();
     }
 
-    function bindZona(id, action) {
-      const el = document.getElementById(id);
-      // Touch tem prioridade — preventDefault bloqueia o click subsequente
-      el.addEventListener("touchstart", (e) => {
-        e.preventDefault();
-        acaoDaZona(action);
-      }, { passive: false });
-      // Click serve para desktop (sem toque)
-      el.addEventListener("click", () => acaoDaZona(action));
-    }
-
-    bindZona("zone-prev", anterior);
-    bindZona("zone-play", pausePlay);
-    bindZona("zone-next", proximo);
+    document.getElementById("zone-prev").addEventListener("click", () => acaoDaZona(anterior));
+    document.getElementById("zone-play").addEventListener("click", () => acaoDaZona(pausePlay));
+    document.getElementById("zone-next").addEventListener("click", () => acaoDaZona(proximo));
 
     // ── Tutorial (primeira visita) ─────────────────────────────────────────
 
