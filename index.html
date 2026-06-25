@@ -150,15 +150,15 @@
   <!-- Tutorial primeira visita -->
   <div id="tutorial">
     <div class="tuto">
-      <div class="tuto-icon">⏮</div>
+      <div class="tuto-icon">⏮&#xFE0E;</div>
       <div class="tuto-label">Précédent</div>
     </div>
     <div class="tuto">
-      <div class="tuto-icon">⏸</div>
+      <div class="tuto-icon">⏸&#xFE0E;</div>
       <div class="tuto-label">Pause</div>
     </div>
     <div class="tuto">
-      <div class="tuto-icon">⏭</div>
+      <div class="tuto-icon">⏭&#xFE0E;</div>
       <div class="tuto-label">Suivant</div>
     </div>
   </div>
@@ -199,17 +199,17 @@
       syncMediaSession();
     }
 
-    function proximo()   { flash("fb-next", "⏭"); carregarE(indice + 1); }
+    function proximo()   { flash("fb-next", "⏭︎"); carregarE(indice + 1); }
     function anterior()  {
-      flash("fb-prev", "⏮");
+      flash("fb-prev", "⏮︎");
       if (audio.currentTime > 3) { audio.currentTime = 0; }
       else { carregarE(indice - 1); }
     }
     function pausePlay() {
       if (tocando) {
-        audio.pause(); tocando = false; flash("fb-play", "⏸");
+        audio.pause(); tocando = false; flash("fb-play", "⏸︎");
       } else {
-        audio.play().then(() => { tocando = true; }); flash("fb-play", "▶");
+        audio.play().then(() => { tocando = true; }); flash("fb-play", "▶︎");
       }
     }
 
