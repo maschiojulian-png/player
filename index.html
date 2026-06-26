@@ -253,32 +253,43 @@
     document.getElementById("zone-play").addEventListener("click", () => acaoDaZona(pausePlay));
     document.getElementById("zone-next").addEventListener("click", () => acaoDaZona(proximo));
 
-    // ── Tutorial (primeira visita) ─────────────────────────────────────────
+    // ── Tutorial (aparece só após primeira rotação pra landscape) ─────────
 
     function fecharTutorial() {
       tutorial.style.opacity = 0;
       setTimeout(() => { tutorial.style.display = "none"; }, 800);
     }
 
-    if (!localStorage.getItem("tuto_v2")) {
-      localStorage.setItem("tuto_v2", "1");
-      requestAnimationFrame(() => tutorial.classList.add("visivel"));
-      setTimeout(fecharTutorial, 4000);
+    function mostrarTutorialSeNecessario() {
+      if (!localStorage.getItem("tuto_v2")) {
+        localStorage.setItem("tuto_v2", "1");
+        requestAnimationFrame(() => tutorial.classList.add("visivel"));
+        setTimeout(fecharTutorial, 4000);
+      }
     }
 
-    // ── Tela de rotação (só na primeira visita) ────────────────────────────
+    // ── Tela de rotação (só até a primeira vez em landscape) ──────────────
 
-    const rotacaoVista = localStorage.getItem("rotacao_v1");
+    let hasRotated = !!localStorage.getItem("rotacao_v1");
 
     function checarOrientacao() {
-      if (rotacaoVista) { girar.style.display = "none"; return; }
-      const isMobile = navigator.maxTouchPoints > 0 || window.innerWidth <= 1024;
+      const isMobile  = navigator.maxTouchPoints > 0 || window.innerWidth <= 1024;
       const isRetrato = window.innerHeight > window.innerWidth;
-      if (isMobile && isRetrato) {
-        girar.style.display = "flex";
-      } else {
+
+      if (!isMobile) {
         girar.style.display = "none";
-        if (isMobile) localStorage.setItem("rotacao_v1", "1");
+        return;
+      }
+
+      if (!isRetrato) {
+        girar.style.display = "none";
+        if (!hasRotated) {
+          hasRotated = true;
+          localStorage.setItem("rotacao_v1", "1");
+          mostrarTutorialSeNecessario();
+        }
+      } else {
+        girar.style.display = hasRotated ? "none" : "flex";
       }
     }
 
